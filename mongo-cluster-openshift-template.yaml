@@ -49,7 +49,7 @@
           app: mongo-cluster
       spec:
         ports:
-        - port: 27017
+        - port: 27019
           name: server
         clusterIP: None
         selector:
@@ -106,7 +106,7 @@
                   cpu: 1
                   memory: 2Gi
               ports:
-              - containerPort: 27017
+              - containerPort: 27019
                 name: server
               volumeMounts:
               - name: data
@@ -119,7 +119,7 @@
                   - bash
                   - "-c"
                   - |
-                    nc -z -v -w5 127.0.0.1 27017
+                    nc -z -v -w5 127.0.0.1 27019
                     if [ "$?" == 0 ]; then
                     exit 0
                     else
@@ -133,7 +133,7 @@
                   - bash
                   - "-c"
                   - |
-                    nc -z -v -w5 127.0.0.1 27017
+                    nc -z -v -w5 127.0.0.1 27019
                     if [ "$?" == 0 ]; then
                     exit 0
                     else
