@@ -34,7 +34,12 @@
             journal:
               enabled: true
           net:
-            bindIp: 0.0.0.0                        
+            port: 27017
+            bindIp: 0.0.0.0
+          replication:
+            replSetName: "replconfig01"
+          sharding:
+            clusterRole: configsvr
       kind: ConfigMap
       metadata:
         name: mongodb-configsrv
@@ -49,7 +54,7 @@
           app: mongo-cluster
       spec:
         ports:
-        - port: 27019
+        - port: 27017
           name: server
         clusterIP: None
         selector:
@@ -97,7 +102,7 @@
               - bash
               - "-c"
               - |
-                /opt/mongodb/bin/mongod --configsvr --config /opt/mongodb-config/mongod.conf
+                /opt/mongodb/bin/mongod --configsvr –port 27017 --config /opt/mongodb-config/mongod.conf
               resources:
                 requests:
                   cpu: 500m
@@ -106,7 +111,7 @@
                   cpu: 1
                   memory: 2Gi
               ports:
-              - containerPort: 27019
+              - containerPort: 27017
                 name: server
               volumeMounts:
               - name: data
@@ -119,7 +124,7 @@
                   - bash
                   - "-c"
                   - |
-                    nc -z -v -w5 127.0.0.1 27019
+                    nc -z -v -w5 127.0.0.1 27017
                     if [ "$?" == 0 ]; then
                     exit 0
                     else
@@ -133,7 +138,7 @@
                   - bash
                   - "-c"
                   - |
-                    nc -z -v -w5 127.0.0.1 27019
+                    nc -z -v -w5 127.0.0.1 27017
                     if [ "$?" == 0 ]; then
                     exit 0
                     else
