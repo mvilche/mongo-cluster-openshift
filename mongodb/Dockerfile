@@ -5,7 +5,8 @@ RUN mkdir -p /opt/mongodb /opt/mongodb-config /opt/mongodb-data && \
 yum -y install libcurl wget netcat net-tools openssl curl nmap-ncat -y
 WORKDIR /opt
 RUN wget $MONGO_VERSION && tar zxvf *.tgz --strip-components 1 -C /opt/mongodb && rm -rf *.tgz
-RUN adduser -u 1001 mongo && chown 1001 -R /opt && \
+COPY checkMongo /opt/checkMongo
+RUN adduser -u 1001 mongo && chmod +x /opt/checkMongo && chown 1001 -R /opt && \
 chgrp -R 0 /opt && \
 chmod -R g=u /opt && yum clean all && rm -rf /var/cache/yum
 USER 1001
