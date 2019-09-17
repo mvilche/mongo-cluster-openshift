@@ -485,6 +485,36 @@
                 limits:
                   cpu: 1
                   memory: 2Gi
+              livenessProbe:
+                exec:
+                  command:
+                  - bash
+                  - "-c"
+                  - |
+                    nc -z -v -w5 127.0.0.1 27017
+                    if [ "$?" == 0 ]; then
+                    exit 0
+                    else
+                    exit 1
+                    fi
+                initialDelaySeconds: 120
+                timeoutSeconds: 50
+                periodSeconds: 40
+              readinessProbe:
+                exec:
+                  command:
+                  - bash
+                  - "-c"
+                  - |
+                    nc -z -v -w5 127.0.0.1 27017
+                    if [ "$?" == 0 ]; then
+                    exit 0
+                    else
+                    exit 1
+                    fi
+                initialDelaySeconds: 120
+                timeoutSeconds: 50
+                periodSeconds: 40                  
               ports:
               - containerPort: 27017
                 name: server
