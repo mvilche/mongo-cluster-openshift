@@ -127,17 +127,17 @@
               ports:
               - containerPort: 27017
                 name: server
-              lifecycle:
-                postStart:
-                  exec:
-                    command:
-                    - bash
-                    - "-c"
-                    - |
-                      /opt/checkMongo configsvr-0.mongodb-configsvr.${NAMESPACE}.svc.cluster.local
-                      /opt/checkMongo configsvr-1.mongodb-configsvr.${NAMESPACE}.svc.cluster.local
-                      /opt/checkMongo configsvr-2.mongodb-configsvr.${NAMESPACE}.svc.cluster.local                      
-                      /opt/mongodb/bin/mongo < inicializar.js               
+              # lifecycle:
+              #   postStart:
+              #     exec:
+              #       command:
+              #       - bash
+              #       - "-c"
+              #       - |
+              #         /opt/checkMongo configsvr-0.mongodb-configsvr.${NAMESPACE}.svc.cluster.local
+              #         /opt/checkMongo configsvr-1.mongodb-configsvr.${NAMESPACE}.svc.cluster.local
+              #         /opt/checkMongo configsvr-2.mongodb-configsvr.${NAMESPACE}.svc.cluster.local                      
+              #         /opt/mongodb/bin/mongo < /opt/mongodb-config/inicializar.js               
               volumeMounts:
               - name: data
                 mountPath: /opt/mongodb-data
@@ -300,17 +300,17 @@
               ports:
               - containerPort: 27017
                 name: server
-              lifecycle:
-                postStart:
-                  exec:
-                    command:
-                    - bash
-                    - "-c"
-                    - |
-                      /opt/checkMongo shardsrv-0.mongodb-shardsvr.${NAMESPACE}.svc.cluster.local
-                      /opt/checkMongo shardsrv-1.mongodb-shardsvr.${NAMESPACE}.svc.cluster.local
-                      /opt/checkMongo shardsrv-2.mongodb-shardsvr.${NAMESPACE}.svc.cluster.local                      
-                      /opt/mongodb/bin/mongo < inicializar.js                
+              # lifecycle:
+              #   postStart:
+              #     exec:
+              #       command:
+              #       - bash
+              #       - "-c"
+              #       - |
+              #         /opt/checkMongo shardsvr-0.mongodb-shardsvr.${NAMESPACE}.svc.cluster.local
+              #         /opt/checkMongo shardsvr-1.mongodb-shardsvr.${NAMESPACE}.svc.cluster.local
+              #         /opt/checkMongo shardsvr-2.mongodb-shardsvr.${NAMESPACE}.svc.cluster.local                      
+              #         /opt/mongodb/bin/mongo < /opt/mongodb-config/inicializar.js  
               volumeMounts:
               - name: data
                 mountPath: /opt/mongodb-data
@@ -371,6 +371,45 @@
     ############################## inicio router
 
 
+
+
+    - apiVersion: v1
+      data:
+        mongod.conf: |-
+          storage:
+            dbPath: /opt/mongodb-data
+            journal:
+              enabled: true
+          net:
+            port: 27017
+            bindIp: 0.0.0.0
+        inicializarShardsvr.js: |-
+          rs.initiate(
+            {
+              _id : "shardreplica01",
+              members: [
+                { _id : 0, host : "shardsvr-0.mongodb-shardsvr.${NAMESPACE}.svc.cluster.local:27017" },
+                { _id : 1, host : "shardsvr-1.mongodb-shardsvr.${NAMESPACE}.svc.cluster.local:27017" },
+                { _id : 2, host : "shardsvr-2.mongodb-shardsvr.${NAMESPACE}.svc.cluster.local:27017" }
+                
+              ]
+            }
+          )
+        inicializarConfigsvr.js: |-
+          rs.initiate(
+            {
+              _id: "replconfig01",
+              configsvr: true,
+              members: [
+                { _id : 0, host : "configsvr-0.mongodb-configsvr.${NAMESPACE}.svc.cluster.local:27017" },
+                { _id : 1, host : "configsvr-1.mongodb-configsvr.${NAMESPACE}.svc.cluster.local:27017" },
+                { _id : 2, host : "configsvr-2.mongodb-configsvr.${NAMESPACE}.svc.cluster.local:27017" }
+              ]
+            }
+          )            
+      kind: ConfigMap
+      metadata:
+        name: mongodb-router
 
     - apiVersion: v1
       kind: Service
@@ -433,6 +472,11 @@
                 /opt/checkMongo configsvr-0.mongodb-configsvr.${NAMESPACE}.svc.cluster.local
                 /opt/checkMongo configsvr-1.mongodb-configsvr.${NAMESPACE}.svc.cluster.local
                 /opt/checkMongo configsvr-2.mongodb-configsvr.${NAMESPACE}.svc.cluster.local
+                /opt/checkMongo shardsvr-0.mongodb-shardsvr.${NAMESPACE}.svc.cluster.local
+                /opt/checkMongo shardsvr-1.mongodb-shardsvr.${NAMESPACE}.svc.cluster.local
+                /opt/checkMongo shardsvr-2.mongodb-shardsvr.${NAMESPACE}.svc.cluster.local
+                /opt/mongodb/bin/mongo < /opt/mongodb-config/inicializarConfigsvr.js
+                /opt/mongodb/bin/mongo < /opt/mongodb-config/inicializarShardsvr.js                   
                 /opt/mongodb/bin/mongos --configdb 'replconfig01/configsvr-0.mongodb-configsvr.${NAMESPACE}.svc.cluster.local:27017,configsvr-1.mongodb-configsvr.${NAMESPACE}.svc.cluster.local:27017,configsvr-2.mongodb-configsvr.${NAMESPACE}.svc.cluster.local:27017'
               resources:
                 requests:
@@ -447,13 +491,19 @@
               volumeMounts:
               - name: data
                 mountPath: /opt/mongodb-data
+              - name: configmap
+                mountPath: /opt/mongodb-config                
             resources:
               requests:
                 cpu: 500m
                 memory: 128Mi
               limits:
                 cpu: 1
-                memory: 512Mi                     
+                memory: 512Mi
+            volumes:
+            - name: configmap
+              configMap:
+                name: mongodb-router                                 
         volumeClaimTemplates:
         - metadata:
             name: data
