@@ -6,8 +6,9 @@ yum -y install libcurl wget netcat net-tools openssl curl nmap-ncat -y
 WORKDIR /opt
 RUN wget $MONGO_VERSION && tar zxvf *.tgz --strip-components 1 -C /opt/mongodb && rm -rf *.tgz
 COPY checkMongo /opt/checkMongo
-RUN adduser -u 1001 mongo && chmod +x /opt/checkMongo && chown 1001 -R /opt && \
-chgrp -R 0 /opt && \
-chmod -R g=u /opt && yum clean all && rm -rf /var/cache/yum
+RUN adduser -m -u 1001 mongo && chmod +x /opt/checkMongo && chown 1001 -R /opt /home/mongo && \
+chgrp -R 0 /opt /home/mongo && \
+chmod -R g=u /opt /home/mongo && yum clean all && rm -rf /var/cache/yum
 USER 1001
+ENV HOME /home/mongo
 EXPOSE 27017 27018 27019
